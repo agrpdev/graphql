@@ -67,6 +67,12 @@ public class TestGQLResource {
         return List.of("success", "calling", "field", "from", "resource");
     }
 
+    @GraphQlQuery("inputObjectInject")
+    public List<String> getInputObjectInject(DataFetchingEnvironment dataFetchingEnvironment,
+                                             @GraphQLParam("input") InputObject inputObject) {
+        return List.of(inputObject.getInjected() + "/" + inputObject.getValue());
+    }
+
     @GraphQLFields(value = {
             @GraphQLField(parentType = "cz_atlascon_graphql_pojo_PojoObject", value = "infoList2"),
             @GraphQLField(parentType = "cz_atlascon_graphql_pojo_PojoObject", value = "infoList3")

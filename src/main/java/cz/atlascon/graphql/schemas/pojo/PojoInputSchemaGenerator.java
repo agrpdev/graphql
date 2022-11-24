@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import cz.atlascon.graphql.common.Common;
+import cz.atlascon.graphql.invoke.ContextInject;
 import cz.atlascon.graphql.ng.AllowNullElements;
 import cz.atlascon.graphql.schemas.CommonSchemaGenerator;
 import cz.atlascon.graphql.schemas.types.GraphQLTypeFactory;
@@ -133,6 +134,16 @@ public class PojoInputSchemaGenerator {
         final Annotation[][] annotations = ex.getParameterAnnotations();
         for (int i = 0; i < ex.getParameterCount(); i++) {
             final List<Annotation> argAnnotations = Arrays.asList(annotations[i]);
+            final Optional<Annotation> jsonPropertyOptAnnotation = argAnnotations.stream().filter(a -> a.annotationType() == JsonProperty.class).findAny();
+            if (jsonPropertyOptAnnotation.isEmpty()) {
+                // no JsonProperty annotation, must be ContextInject then
+                final Type param = params[i];
+                Preconditions.checkArgument(
+                        argAnnotations.stream().anyMatch(a -> a.annotationType() == ContextInject.class),
+                        "No JsonProperty or ContextInject on " + param + " in " + clz
+                );
+                continue;
+            }
             final GraphQLInputType fieldType = createInputType(argAnnotations, params[i]);
             final GraphQLInputType resulting;
             if (argAnnotations.stream().anyMatch(a -> a.annotationType() == Nonnull.class)) {
@@ -140,7 +151,7 @@ public class PojoInputSchemaGenerator {
             } else {
                 resulting = fieldType;
             }
-            final Annotation an = argAnnotations.stream().filter(a -> a.annotationType() == JsonProperty.class).findAny().orElseThrow();
+            final Annotation an = jsonPropertyOptAnnotation.orElseThrow();
             final String argName = ((JsonProperty) an).value();
             final GraphQLInputObjectField inField = GraphQLInputObjectField.newInputObjectField()
                     .name(argName)

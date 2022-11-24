@@ -291,4 +291,26 @@ public class GraphQLResourceTest {
         Assert.assertEquals("{\"data\":{\"dataLoaderTest\":[{\"id\":1,\"type\":\"NORMAL\",\"name\":\"name-1\"},{\"id\":2,\"type\":\"NORMAL\",\"name\":\"name-2\"},{\"id\":3,\"type\":\"NORMAL\",\"name\":\"name-3\"}]}}", response);
     }
 
+    @Test
+    public void shouldInjectToInputObject() throws Exception {
+        Map map = new HashMap();
+        map.put("operationName", "inputObjectInject");
+        map.put("variables", Map.of());
+        map.put("query", "{ inputObjectInject(input: { value : \"input value\"  } ) }");
+        GraphqlRequest request = new GraphqlRequest(map);
+        ExecutionInput execInput = ExecutionInput.newExecutionInput(request.getQuery())
+                .variables(request.getVars())
+                .graphQLContext(
+                        Map.of(
+                                String.class, "usernameXX"
+                        ))
+                .cacheControl(CacheControl.newCacheControl())
+                .build();
+        final ExecutionResult result = grapql.execute(execInput);
+
+        Assert.assertEquals(List.of(), result.getErrors());
+        final String response = new ObjectMapper().writeValueAsString(result.toSpecification());
+        Assert.assertEquals("{\"data\":{\"inputObjectInject\":[\"usernameXX/input value\"]}}", response);
+    }
+
 }

@@ -3,6 +3,7 @@ package cz.atlascon.graphql.schemas.pojo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
+import cz.atlascon.graphql.invoke.ContextInject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,7 @@ public class PojoDeserializer {
             final Parameter param = params[i];
             final JsonProperty property = param.getAnnotation(JsonProperty.class);
             if (property == null) {
-                throw new IllegalArgumentException("Missing @JsonProperty annotation on param " + param + " in " + clz);
+                continue;
             }
             final String propName = property.value();
             final Type argType = getArgType(param);
@@ -134,7 +135,11 @@ public class PojoDeserializer {
             for (Parameter p : ex.getParameters()) {
                 final JsonProperty an = p.getAnnotation(JsonProperty.class);
                 if (an == null || an.value().isBlank()) {
-                    return false;
+                    final ContextInject ci = p.getAnnotation(ContextInject.class);
+                    if (ci == null) {
+                        // if no JsonProperty or ContextInject annotation -> not a constructor method
+                        return false;
+                    }
                 }
             }
             return true;
